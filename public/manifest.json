@@ -1,0 +1,10 @@
+
+{
+  "name": "Dev Trackr",
+  "short_name": "DevTrackr",
+  "description": "Track your development projects and research",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000"
+}
