@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Check } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { TodoItem } from "@/types/project";
+import { v4 as uuidv4 } from 'uuid';
 
 interface QuickTasksProps {
   todos: TodoItem[];
@@ -18,7 +19,7 @@ export function QuickTasks({ todos, onUpdateTodos }: QuickTasksProps) {
     if (!newTodo.trim()) return;
     
     const todo: TodoItem = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       content: newTodo,
       completed: false,
       timestamp: new Date().toISOString(),
