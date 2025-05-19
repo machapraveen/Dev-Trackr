@@ -51,7 +51,20 @@ export default function Index() {
         console.error("Error fetching projects:", error);
         toast({ title: "Error", description: "Failed to load projects: " + error.message, variant: "destructive" });
       } else {
-        setProjects(data || []);
+        // Transform data to match interface
+        const transformedProjects = data?.map(project => ({
+          ...project,
+          createdAt: project.created_at,
+          updatedAt: project.updated_at,
+          activityLogs: project.activity_logs || [],
+          notes: [], // Add empty notes array as it's required by interface
+          tasks: project.tasks?.map(task => ({
+            ...task,
+            projectId: project.id
+          })) || [],
+          links: project.links || []
+        })) || [];
+        setProjects(transformedProjects);
       }
     };
 
@@ -149,7 +162,18 @@ export default function Index() {
       links = [newLink];
     }
 
-    setProjects((prev) => [{ ...data, links, tasks: [], activity_logs: [] }, ...prev]);
+    // Transform the response to match the interface
+    const transformedProject = {
+      ...data,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      links,
+      tasks: [],
+      activityLogs: [],
+      notes: []
+    };
+
+    setProjects((prev) => [transformedProject, ...prev]);
     toast({ title: "Project Created", description: `${data.name} has been created successfully.` });
   };
 
@@ -173,23 +197,43 @@ export default function Index() {
 
   const handleUpdateQuickLinks = async (updatedLinks: QuickLink[]) => {
     if (!userId) return;
-    const { error } = await supabase.from("quick_links").upsert(updatedLinks.map(link => ({ ...link, user_id: userId })));
-    if (error) {
-      console.error("Error updating quick links:", error);
-      toast({ title: "Error", description: "Failed to update quick links: " + error.message, variant: "destructive" });
-      return;
+    
+    // Delete existing links first
+    await supabase.from("quick_links").delete().eq("user_id", userId);
+    
+    // Insert new links if any
+    if (updatedLinks.length > 0) {
+      const { error } = await supabase.from("quick_links").insert(
+        updatedLinks.map(link => ({ ...link, user_id: userId }))
+      );
+      if (error) {
+        console.error("Error updating quick links:", error);
+        toast({ title: "Error", description: "Failed to update quick links: " + error.message, variant: "destructive" });
+        return;
+      }
     }
+    
     setQuickLinks(updatedLinks);
   };
 
   const handleUpdateTodos = async (updatedTodos: TodoItem[]) => {
     if (!userId) return;
-    const { error } = await supabase.from("todos").upsert(updatedTodos.map(todo => ({ ...todo, user_id: userId })));
-    if (error) {
-      console.error("Error updating todos:", error);
-      toast({ title: "Error", description: "Failed to update todos: " + error.message, variant: "destructive" });
-      return;
+    
+    // Delete existing todos first
+    await supabase.from("todos").delete().eq("user_id", userId);
+    
+    // Insert new todos if any
+    if (updatedTodos.length > 0) {
+      const { error } = await supabase.from("todos").insert(
+        updatedTodos.map(todo => ({ ...todo, user_id: userId }))
+      );
+      if (error) {
+        console.error("Error updating todos:", error);
+        toast({ title: "Error", description: "Failed to update todos: " + error.message, variant: "destructive" });
+        return;
+      }
     }
+    
     setTodos(updatedTodos);
   };
 
