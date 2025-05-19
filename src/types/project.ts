@@ -1,4 +1,3 @@
-
 export interface Project {
   id: string;
   name: string;
@@ -49,6 +48,7 @@ export interface QuickLink {
   url: string;
   icon: string;
   color: string;
+  timestamp?: string;
 }
 
 export interface TodoItem {
