@@ -11,8 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Project } from "@/types/project";
 import { useState } from "react";
-// Correct import for uuidv4
-import { v4 } from 'uuid'; // This is the correct import
+import { v4 as uuidv4 } from 'uuid';
 
 const PROJECT_COLORS = [
   "#8B5CF6", // Vivid Purple
@@ -48,8 +47,7 @@ export function NewProjectDialog({
       notes: [],
       links: [
         {
-          // Use v4() from uuid
-          id: v4(), // This generates the UUID
+          id: uuidv4(),
           type: 'file',
           path: projectPath,
           timestamp: new Date().toISOString(),
