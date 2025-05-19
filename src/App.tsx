@@ -23,8 +23,12 @@ const App = () => {
         
         // Check for existing session
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
+        if (session?.user) {
           console.log('Existing session found:', session.user.email, 'ID:', session.user.id);
+          
+          // Ensure user exists in users table
+          await ensureUserInDatabase(session.user.id, session.user.email || '');
+          
           setIsAuthenticated(true);
           setIsLoading(false);
           return;
@@ -55,22 +59,26 @@ const App = () => {
           if (signUpData.user) {
             console.log('User signed up:', signUpData.user.email, 'ID:', signUpData.user.id);
             
-            // Wait a moment for the user to be fully created in Supabase Auth
-            setTimeout(async () => {
-              // Check if we need email confirmation
-              if (!signUpData.session) {
-                console.log('Email confirmation may be required');
-                setAuthError('Please check your email for confirmation link');
-                setIsLoading(false);
-                return;
-              }
-              
-              setIsAuthenticated(true);
+            // Create user in database
+            await ensureUserInDatabase(signUpData.user.id, signUpData.user.email || '');
+            
+            // Check if we need email confirmation
+            if (!signUpData.session) {
+              console.log('Email confirmation may be required');
+              setAuthError('Please check your email for confirmation link');
               setIsLoading(false);
-            }, 1000);
+              return;
+            }
+            
+            setIsAuthenticated(true);
+            setIsLoading(false);
           }
         } else if (signInData.user) {
           console.log('Signed in successfully:', signInData.user.email, 'ID:', signInData.user.id);
+          
+          // Ensure user exists in users table
+          await ensureUserInDatabase(signInData.user.id, signInData.user.email || '');
+          
           setIsAuthenticated(true);
           setIsLoading(false);
         }
@@ -81,13 +89,50 @@ const App = () => {
       }
     };
 
+    // Function to ensure user exists in database
+    const ensureUserInDatabase = async (userId: string, email: string) => {
+      try {
+        // Check if user already exists
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', userId)
+          .single();
+
+        if (!existingUser) {
+          // User doesn't exist, create them
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert([{ 
+              id: userId, 
+              email: email,
+              created_at: new Date().toISOString()
+            }]);
+
+          if (insertError) {
+            console.error('Error creating user in database:', insertError);
+            // Don't throw error, as auth user exists
+          } else {
+            console.log('User created in database:', userId);
+          }
+        } else {
+          console.log('User already exists in database:', userId);
+        }
+      } catch (error) {
+        console.error('Error checking/creating user:', error);
+        // Don't throw error, as auth user exists
+      }
+    };
+
     handleAuth();
 
     // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
       
-      if (event === 'SIGNED_IN' && session) {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Ensure user exists in database when signing in
+        await ensureUserInDatabase(session.user.id, session.user.email || '');
         setIsAuthenticated(true);
         setAuthError(null);
       } else if (event === 'SIGNED_OUT') {
