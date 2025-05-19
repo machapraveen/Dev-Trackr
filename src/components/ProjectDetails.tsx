@@ -14,6 +14,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { Project, ProjectLink, ProjectTask, ActivityLog } from "@/types/project";
 import { supabase } from "@/lib/supabaseClient";
+import { v4 as uuidv4 } from 'uuid';
 
 interface ProjectDetailsProps {
   project: Project;
@@ -38,7 +39,7 @@ export function ProjectDetails({
   const handleProgressChange = async (increment: boolean) => {
     const newProgress = increment ? Math.min(project.progress + 5, 100) : Math.max(project.progress - 5, 0);
     const log: ActivityLog = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       type: "progress_updated",
       description: `Progress ${increment ? "increased" : "decreased"} to ${newProgress}%`,
       timestamp: new Date().toISOString(),
@@ -69,7 +70,7 @@ export function ProjectDetails({
       ...project,
       progress: newProgress,
       updatedAt: new Date().toISOString(),
-      activity_logs: [log, ...(project.activity_logs || [])],
+      activityLogs: [log, ...(project.activityLogs || [])],
     });
 
     toast({ title: "Progress Updated", description: `Project progress is now ${newProgress}%` });
@@ -103,10 +104,10 @@ export function ProjectDetails({
 
     const links: ProjectLink[] = [];
     if (newUrlPath.trim()) {
-      links.push({ id: crypto.randomUUID(), type: "url", path: newUrlPath, timestamp: new Date().toISOString() });
+      links.push({ id: uuidv4(), type: "url", path: newUrlPath, timestamp: new Date().toISOString() });
     }
     if (newFilePath.trim()) {
-      links.push({ id: crypto.randomUUID(), type: "file", path: newFilePath, timestamp: new Date().toISOString() });
+      links.push({ id: uuidv4(), type: "file", path: newFilePath, timestamp: new Date().toISOString() });
     }
 
     const { error } = await supabase
@@ -120,7 +121,7 @@ export function ProjectDetails({
     }
 
     const log: ActivityLog = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       type: "link_added",
       description: `Added ${links.length} new link(s)`,
       timestamp: new Date().toISOString(),
@@ -139,7 +140,7 @@ export function ProjectDetails({
     onUpdateProject({
       ...project,
       links: [...links, ...project.links],
-      activity_logs: [log, ...(project.activity_logs || [])],
+      activityLogs: [log, ...(project.activityLogs || [])],
       updatedAt: new Date().toISOString(),
     });
 
@@ -152,7 +153,7 @@ export function ProjectDetails({
     if (!newTask.trim()) return;
 
     const task: ProjectTask = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       content: newTask,
       completed: false,
       timestamp: new Date().toISOString(),
@@ -387,7 +388,7 @@ export function ProjectDetails({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Activity Log</h3>
             <div className="space-y-2">
-              {project.activity_logs?.map((log) => (
+              {project.activityLogs?.map((log) => (
                 <div key={log.id} className="p-3 bg-muted rounded-lg space-y-1">
                   <p className="text-sm">{log.description}</p>
                   <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(log.timestamp))} ago</p>
